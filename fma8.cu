@@ -54,8 +54,16 @@ __device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
     return r;
 }
 
-__device__ __forceinline__ int reduce_f8(int vec, int* __restrict__ acore) {
+__device__ __forceinline__ int reduce_f8(int vec, const int* __restrict__ acore) {
     return add(add(add((vec >> 24) & 0xff, (vec >> 16) & 0xff, acore), (vec >> 8) & 0xff, acore), vec & 0xff, acore);
+}
+
+__device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore) {
+    int res = 0;
+    for(int i = 0; i < 4; i++) {
+        res |= add((a >> (i * 8)) & 0xff, (b >> (i * 8)) & 0xff, acore) << (i * 8);
+    }
+    return res;
 }
 
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
@@ -82,13 +90,15 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     int x0 = blockIdx.x * blockDim.x, y0 = blockIdx.y * blockDim.y;
     const int u = threadIdx.x % 8, v = threadIdx.y * 4 + threadIdx.x / 8; // u: 0-7, v: 0-31, u is continuous
+    const int tx = threadIdx.x, ty = threadIdx.y;
     int tid = threadIdx.y * blockDim.x + threadIdx.x;
     int mz = m / 4, pz = p / 4;
 
     int res = 0;
+    int dres;
     int rs[4];
     __shared__ int ac[4096], mc[4096];
-    __shared__ int As[32 * 8], Bs[4][32 * 8];
+    __shared__ int As[32 * 8], Bs[32 * 8];
     // Load core
     for(int i = 0; i < 4096; i += 256) {
         ac[i + tid] = __ldcg(acore + i + tid);
@@ -96,22 +106,24 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
     }
     __syncthreads();
 
-    for(int i = 0; i < m; i += 32) {
+    for(int i = 0; i < mz; i += 8) {
         As[v * 8 + u] = A[(x0 + v) * mz + i + u];
-#pragma unroll
-        for(int j = 0; j < 4; j++) {
-            Bs[j][v * 8 + u] = B[((y0 + v) * 4 + j) * mz + i + u];
-        }
+        Bs[v * 8 + u] = B[(y0*4 + v) * mz + i + u];
         __syncthreads();
         // rs is at (x0 + tx, y0 + ty)
         rs[0] = rs[1] = rs[2] = rs[3] = 0;
-        for(int j = 0; j < 4; j++) {
-            for(int k = 0; k < 8; k++){
-                rs[j] = fma8v4(As[k], Bs[j][k], rs[j], ac, mc);
+        for(int j = 0; j < 8; j++) {
+            for(int k = 0; k < 4; k++){
+                rs[k] = fma8v4(As[tx*8+j], Bs[(ty*4+k)+j], rs[k], ac, mc);
             }
         }
+        dres = 0;
+        for(int j = 0; j < 4; j++){
+            dres |= reduce_f8(rs[j], ac) << (j*8);
+        }
+        res = addv4(res, dres, ac);
+        __syncthreads();
     }
-    __syncthreads();
 
     C[x * pz + y] = res;
 }
