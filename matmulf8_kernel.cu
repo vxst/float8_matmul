@@ -24,7 +24,7 @@ __device__ __forceinline__ int access_byte(const int* __restrict__ data, int i) 
 
 __device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
     int r = 0;
-    int at = a & 0x7f, bt = b & 0x7f;
+#ifdef DB
     if((a&0x80)^(b&0x80)) {
         if(bt > at){
             r = access_byte(acore, (bt << 7) + at);
@@ -42,6 +42,9 @@ __device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
         }
         r |= a & 0x80;
     }
+#else
+    r = access_byte(acore, (a << 7) + b);
+#endif
     return r;
 }
 

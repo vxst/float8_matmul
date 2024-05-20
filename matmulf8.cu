@@ -43,7 +43,11 @@ int main() {
     cudaMallocHost(&A, n * m * sizeof(int) / 4);
     cudaMallocHost(&B, m * p * sizeof(int) / 4);
     cudaMallocHost(&C, n * p * sizeof(int) / 4);
+#ifdef DB
     int* acore = load_core("addcore.bin");
+#else
+    int* acore = load_core("apdcore.bin");
+#endif
     int* mcore = load_core("mltcore.bin");
     for(int i = 0; i < n * m / 4; i++) {
         A[i] = rand();
