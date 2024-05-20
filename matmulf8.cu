@@ -1,4 +1,7 @@
+#include <cstdio>
+
 #include <cuda_runtime.h>
+#include "load_core.cuh"
 #include "matmulf8_kernel.cuh"
 
 float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore) {
@@ -34,4 +37,23 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
     return t;
 }
 
-
+int main() {
+    int n = 1024, m = 1024, p = 1024;
+    int *A, *B, *C;
+    cudaMallocHost(&A, n * m * sizeof(int) / 4);
+    cudaMallocHost(&B, m * p * sizeof(int) / 4);
+    cudaMallocHost(&C, n * p * sizeof(int) / 4);
+    int* acore = load_core("addcore.bin");
+    int* mcore = load_core("mltcore.bin");
+    for(int i = 0; i < n * m; i++) {
+        A[i] = rand() & 0xff;
+    }
+    for(int i = 0; i < m * p; i++) {
+        B[i] = rand() & 0xff;
+    }
+    float t = matmul(A, B, C, n, m, p, acore, mcore);
+    printf("Time: %f ms\n", t);
+    cudaFreeHost(A); cudaFreeHost(B); cudaFreeHost(C);
+    cudaFreeHost(acore); cudaFreeHost(mcore);
+    return 0;
+}

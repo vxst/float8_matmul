@@ -15,6 +15,7 @@
 
 
 #include <cuda_runtime.h>
+#include "matmulf8_kernel.cuh"
 
 
 __device__ __forceinline__ int access_byte(const int* __restrict__ data, int i) {

@@ -16,6 +16,7 @@
 
 #include <cstdio>
 #include <cuda_runtime.h>
+#include "load_core.cuh"
 
 int* load_core(const char* filename) {
     FILE* f = fopen(filename, "rb");
