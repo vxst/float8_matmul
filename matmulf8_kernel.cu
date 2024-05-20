@@ -23,32 +23,22 @@ __device__ __forceinline__ int access_byte(const int* __restrict__ data, int i) 
 }
 
 __device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
-    int r;
+    int r = 0;
+    int at = a & 0x7f, bt = b & 0x7f;
     if((a&0x80)^(b&0x80)) {
-        if((a&0x7f) == (b&0x7f)){
-            r = 0x00;
-        }else if(a&0x80){
-            // b - a
-            if((b&0x7f) > (a&0x7f)){
-                r = access_byte(acore, ((b&0x7f) << 7) + (a&0x7f));
-            }else{
-                r = access_byte(acore, ((a&0x7f) << 7) + (b&0x7f));
-                r ^= 0x80;
-            }
+        if(bt > at){
+            r = access_byte(acore, (bt << 7) + at);
         }else{
-            // a - b
-            if((a&0x7f) > (b&0x7f)){
-                r = access_byte(acore, ((a&0x7f) << 7) + (b&0x7f));
-            }else{
-                r = access_byte(acore, ((b&0x7f) << 7) + (a&0x7f));
-                r ^= 0x80;
-            }
+            r = access_byte(acore, (at << 7) + bt);
+        }
+        if(((b&0x7f) > (a&0x7f)) && (b&0x80)){
+            r ^= 0x80;
         }
     } else {
-        if((a&0x7f) <= (b&0x7f)){
-            r = access_byte(acore, ((a&0x7f) << 7) + (b&0x7f));
+        if(at <= bt){
+            r = access_byte(acore, (at << 7) + bt);
         }else{
-            r = access_byte(acore, ((b&0x7f) << 7) + (a&0x7f));
+            r = access_byte(acore, (bt << 7) + at);
         }
         r |= a & 0x80;
     }
@@ -116,6 +106,7 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
         for(int j = 0; j < 8; j++) {
             for(int k = 0; k < 4; k++){
                 rs[k] = fma8v4(As[tx*9+j], Bs[(ty*4+k)*9+j], rs[k], ac, mc);
+                // rs[k] = As[tx*9+j] + Bs[(ty*4+k)*9+j];
             }
         }
         dres = 0;
