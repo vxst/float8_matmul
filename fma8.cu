@@ -72,14 +72,27 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
                          int* __restrict__ acore, int* __restrict__ mcore) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int x0 = blockIdx.x * blockDim.x, y0 = blockIdx.y * blockDim.y;
+    const int u = threadIdx.x % 8, v = threadIdx.y * 4 + threadIdx.x / 8; // u: 0-7, v: 0-31, u is continuous
     int tid = threadIdx.y * blockDim.x + threadIdx.x;
-    int pz = p / 4;
+    int mz = m / 4, pz = p / 4;
+
     int res = 0;
     __shared__ int ac[4096], mc[4096];
+    __shared__ int As[32 * 8], Bs[4][32 * 8];
     // Load core
-    for(int i = 0; i < 4096; i+=256) {
-        ac[i + tid] = acore[i + tid];
-        mc[i + tid] = mcore[i + tid];
+    for(int i = 0; i < 4096; i += 256) {
+        ac[i + tid] = __ldcg(acore + i + tid);
+        mc[i + tid] = __ldcg(mcore + i + tid);
+    }
+    __syncthreads();
+
+    for(int i = 0; i < m; i += 32) {
+        As[v * 32 + u] = A[(x0 + v) * mz + i + u];
+#pragma unroll
+        for(int j = 0; j < 4; j++) {
+            Bs[j][v * 32 + u] = B[(y0 * 4 + j) * mz + i + u];
+        }
     }
     __syncthreads();
 
