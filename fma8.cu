@@ -54,7 +54,8 @@ __device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
     return r;
 }
 
-__device__ __forceinline__ int reduce_byte(int vec, int* __restrict__ acore) {
+__device__ __forceinline__ int reduce_f8(int vec, int* __restrict__ acore) {
+    return add(add(add((vec >> 24) & 0xff, (vec >> 16) & 0xff, acore), (vec >> 8) & 0xff, acore), vec & 0xff, acore);
 }
 
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
@@ -66,10 +67,8 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
         int b0 = (b >> (i * 8)) & 0xff;
         int c0 = (c >> (i * 8)) & 0xff;
         int m = access_byte(mcore, ((a0&0x7f)<<7) + (b0&0x7f));
-        int r = 0;
         m |= (a0&0x80) ^ (b0&0x80);
-
-        res |= r << (i * 8);
+        res |= add(m, c0, acore) << (i * 8);
     }
     return res;
 }
