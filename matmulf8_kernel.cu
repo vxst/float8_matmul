@@ -23,8 +23,8 @@ __device__ __forceinline__ int access_byte(const int* __restrict__ data, int i) 
 }
 
 __device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
-    int r = 0;
 #ifdef DB
+    int r = 0;
     if((a&0x80)^(b&0x80)) {
         if(bt > at){
             r = access_byte(acore, (bt << 7) + at);
@@ -42,10 +42,10 @@ __device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
         }
         r |= a & 0x80;
     }
-#else
-    r = access_byte(acore, (a << 7) + b);
-#endif
     return r;
+#else
+    return access_byte(acore, (b << 7) + a);
+#endif
 }
 
 __device__ __forceinline__ int reduce_f8(int vec, const int* __restrict__ acore) {
@@ -54,6 +54,7 @@ __device__ __forceinline__ int reduce_f8(int vec, const int* __restrict__ acore)
 
 __device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore) {
     int res = 0;
+#pragma unroll
     for(int i = 0; i < 4; i++) {
         res |= add((a >> (i * 8)) & 0xff, (b >> (i * 8)) & 0xff, acore) << (i * 8);
     }
@@ -109,7 +110,6 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
         for(int j = 0; j < 8; j++) {
             for(int k = 0; k < 4; k++){
                 rs[k] = fma8v4(As[tx*9+j], Bs[(ty*4+k)*9+j], rs[k], ac, mc);
-                // rs[k] = As[tx*9+j] + Bs[(ty*4+k)*9+j];
             }
         }
         dres = 0;

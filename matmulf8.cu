@@ -51,9 +51,11 @@ int main() {
     int* mcore = load_core("mltcore.bin");
     for(int i = 0; i < n * m / 4; i++) {
         A[i] = rand();
+        A[i] &= 0x7f7f7f7f;
     }
     for(int i = 0; i < m * p / 4; i++) {
         B[i] = rand();
+        B[i] &= 0x7f7f7f7f;
     }
     float t = matmul(A, B, C, n, m, p, acore, mcore);
     printf("Time: %f ms\n", t);
