@@ -17,8 +17,44 @@
 #include <cuda_runtime.h>
 
 
-__device__ __forceinline__ int access_byte(int* __restrict__ data, int i) {
+__device__ __forceinline__ int access_byte(const int* __restrict__ data, int i) {
     return data[i>>2] >> ((i&3)<<3) & 0xff;
+}
+
+__device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
+    int r;
+    if((a&0x80)^(b&0x80)) {
+        if((a&0x7f) == (b&0x7f)){
+            r = 0x00;
+        }else if(a&0x80){
+            // b - a
+            if((b&0x7f) > (a&0x7f)){
+                r = access_byte(acore, ((b&0x7f) << 7) + (a&0x7f));
+            }else{
+                r = access_byte(acore, ((a&0x7f) << 7) + (b&0x7f));
+                r ^= 0x80;
+            }
+        }else{
+            // a - b
+            if((a&0x7f) > (b&0x7f)){
+                r = access_byte(acore, ((a&0x7f) << 7) + (b&0x7f));
+            }else{
+                r = access_byte(acore, ((b&0x7f) << 7) + (a&0x7f));
+                r ^= 0x80;
+            }
+        }
+    } else {
+        if((a&0x7f) <= (b&0x7f)){
+            r = access_byte(acore, ((a&0x7f) << 7) + (b&0x7f));
+        }else{
+            r = access_byte(acore, ((b&0x7f) << 7) + (a&0x7f));
+        }
+        r |= a & 0x80;
+    }
+    return r;
+}
+
+__device__ __forceinline__ int reduce_byte(int vec, int* __restrict__ acore) {
 }
 
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
@@ -32,34 +68,7 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
         int m = access_byte(mcore, ((a0&0x7f)<<7) + (b0&0x7f));
         int r = 0;
         m |= (a0&0x80) ^ (b0&0x80);
-        if((m&0x80)^(c0&0x80)) {
-            if((m&0x7f) == (c0&0x7f)){
-                r = 0x00;
-            }else if(m&0x80){
-                // c0 - m
-                if((c0&0x7f) > (m&0x7f)){
-                    r = access_byte(acore, ((c0&0x7f) << 7) + (m&0x7f));
-                }else{
-                    r = access_byte(acore, ((m&0x7f) << 7) + (c0&0x7f));
-                    r ^= 0x80;
-                }
-            }else{
-                // m - c0
-                if((m&0x7f) > (c0&0x7f)){
-                    r = access_byte(acore, ((m&0x7f) << 7) + (c0&0x7f));
-                }else{
-                    r = access_byte(acore, ((c0&0x7f) << 7) + (m&0x7f));
-                    r ^= 0x80;
-                }
-            }
-        } else {
-            if((m&0x7f) <= (c0&0x7f)){
-                r = access_byte(acore, ((m&0x7f) << 7) + (c0&0x7f));
-            }else{
-                r = access_byte(acore, ((c0&0x7f) << 7) + (m&0x7f));
-            }
-            r |= m & 0x80;
-        }
+
         res |= r << (i * 8);
     }
     return res;
@@ -78,6 +87,7 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
     int mz = m / 4, pz = p / 4;
 
     int res = 0;
+    int rs[4];
     __shared__ int ac[4096], mc[4096];
     __shared__ int As[32 * 8], Bs[4][32 * 8];
     // Load core
@@ -92,6 +102,14 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
 #pragma unroll
         for(int j = 0; j < 4; j++) {
             Bs[j][v * 32 + u] = B[(y0 * 4 + j) * mz + i + u];
+        }
+        __syncthreads();
+        // rs is at (x0 + tx, y0 + ty)
+        rs[0] = rs[1] = rs[2] = rs[3] = 0;
+        for(int j = 0; j < 4; j++) {
+            for(int k = 0; k < 8; k++) {
+                rs[j] = fma8v4(As[k], Bs[j][k], rs[j], ac, mc);
+            }
         }
     }
     __syncthreads();
