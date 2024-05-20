@@ -16,6 +16,7 @@
 
 #include <cstdio>
 #include <cuda_runtime.h>
+#include "load_core.cuh"
 
 int* load_core(const char* filename) {
     FILE* f = fopen(filename, "rb");
@@ -27,4 +28,5 @@ int* load_core(const char* filename) {
     cudaMallocHost(&data, 16384);
     fread(data, sizeof(int), 16384 / sizeof(int), f);
     fclose(f);
+    return data;
 }
