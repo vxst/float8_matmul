@@ -64,3 +64,24 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
     }
     return res;
 }
+
+// A 32x8 core, do 32x32 matrix multiplication
+// tx: 0-31, ty: 0-7
+__global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restrict__ C,
+                         int n, int m, int p,
+                         int* __restrict__ acore, int* __restrict__ mcore) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int tid = threadIdx.y * blockDim.x + threadIdx.x;
+    int pz = p / 4;
+    int res = 0;
+    __shared__ int ac[4096], mc[4096];
+    // Load core
+    for(int i = 0; i < 4096; i+=256) {
+        ac[i + tid] = acore[i + tid];
+        mc[i + tid] = mcore[i + tid];
+    }
+    __syncthreads();
+
+    C[x * pz + y] = res;
+}
