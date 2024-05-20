@@ -28,4 +28,5 @@ int* load_core(const char* filename) {
     cudaMallocHost(&data, 16384);
     fread(data, sizeof(int), 16384 / sizeof(int), f);
     fclose(f);
+    return data;
 }

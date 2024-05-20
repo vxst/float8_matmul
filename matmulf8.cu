@@ -38,21 +38,23 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
 }
 
 int main() {
-    int n = 1024, m = 1024, p = 1024;
+    int n = 4096, m = 4096, p = 4096;
     int *A, *B, *C;
     cudaMallocHost(&A, n * m * sizeof(int) / 4);
     cudaMallocHost(&B, m * p * sizeof(int) / 4);
     cudaMallocHost(&C, n * p * sizeof(int) / 4);
     int* acore = load_core("addcore.bin");
     int* mcore = load_core("mltcore.bin");
-    for(int i = 0; i < n * m; i++) {
-        A[i] = rand() & 0xff;
+    for(int i = 0; i < n * m / 4; i++) {
+        A[i] = rand();
     }
-    for(int i = 0; i < m * p; i++) {
-        B[i] = rand() & 0xff;
+    for(int i = 0; i < m * p / 4; i++) {
+        B[i] = rand();
     }
     float t = matmul(A, B, C, n, m, p, acore, mcore);
     printf("Time: %f ms\n", t);
+    float flops = 2.0 * n * m * p / t / 1e6;
+    printf("FLOPS: %f GFLOPS\n", flops);
     cudaFreeHost(A); cudaFreeHost(B); cudaFreeHost(C);
     cudaFreeHost(acore); cudaFreeHost(mcore);
     return 0;

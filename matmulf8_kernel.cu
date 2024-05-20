@@ -99,7 +99,7 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
     int dres;
     int rs[4];
     __shared__ int ac[4096], mc[4096];
-    __shared__ int As[32 * 8], Bs[32 * 8];
+    __shared__ int As[32 * 9], Bs[32 * 9];
     // Load core
     for(int i = 0; i < 4096; i += 256) {
         ac[i + tid] = __ldcg(acore + i + tid);
@@ -108,14 +108,14 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
     __syncthreads();
 
     for(int i = 0; i < mz; i += 8) {
-        As[v * 8 + u] = A[(x0 + v) * mz + i + u];
-        Bs[v * 8 + u] = B[(y0*4 + v) * mz + i + u];
+        As[v * 9 + u] = A[(x0 + v) * mz + i + u];
+        Bs[v * 9 + u] = B[(y0*4 + v) * mz + i + u];
         __syncthreads();
         // rs is at (x0 + tx, y0 + ty)
         rs[0] = rs[1] = rs[2] = rs[3] = 0;
         for(int j = 0; j < 8; j++) {
             for(int k = 0; k < 4; k++){
-                rs[k] = fma8v4(As[tx*8+j], Bs[(ty*4+k)+j], rs[k], ac, mc);
+                rs[k] = fma8v4(As[tx*9+j], Bs[(ty*4+k)*9+j], rs[k], ac, mc);
             }
         }
         dres = 0;
