@@ -100,15 +100,13 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
         As[v * 32 + u] = A[(x0 + v) * mz + i + u];
 #pragma unroll
         for(int j = 0; j < 4; j++) {
-            Bs[j][v * 32 + u] = B[(y0 * 4 + j) * mz + i + u];
+            Bs[j][v * 32 + u] = B[((y0 + v) * 4 + j) * mz + i + u];
         }
         __syncthreads();
         // rs is at (x0 + tx, y0 + ty)
         rs[0] = rs[1] = rs[2] = rs[3] = 0;
         for(int j = 0; j < 4; j++) {
-            for(int k = 0; k < 8; k++) {
-                rs[j] = fma8v4(As[k], Bs[j][k], rs[j], ac, mc);
-            }
+
         }
     }
     __syncthreads();
