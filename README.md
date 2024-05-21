@@ -30,10 +30,27 @@ The current format is `float8_e5m2`, but other variations can be introduced rela
 ## Speed
 
 This implementation offers a way to simulate the behavior of FP8 matrix multiplication with reasonable performance on
-older devices. In my test environment, this naive implementation achieves `140 GFLOPS` on `1/8` of the temporal slice of
+older devices. In my test environment, this naive implementation achieves `139.1 GFLOPS` on `1/8` of the temporal slice of
 an Nvidia A16 GPU, where the FP32 throughput is `560 GFLOPS`.
 
 It can enable engineers to develop and test FP8 algorithms on older devices without FP8 support, like laptops and
 personal computers, and then deploy them on newer devices with FP8 support.
 
 # WARNING: THIS IS AN EXPERIMENTAL PROJECT, NOT FULLY TESTED YET
+
+```
+Copyright (C) 2024 Chunqing Shan
+
+float8_matmul is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+float8_matmul is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with float8_matmul. If not, see <http://www.gnu.org/licenses/>.
+```
