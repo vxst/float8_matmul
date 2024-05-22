@@ -54,6 +54,7 @@ __device__ __forceinline__ int reduce_f8(int vec, const int* __restrict__ acore)
 
 __device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore) {
     int res = 0;
+    // TODO: Use unpack PTX instruction
 #pragma unroll
     for(int i = 0; i < 4; i++) {
         res |= add((a >> (i * 8)) & 0xff, (b >> (i * 8)) & 0xff, acore) << (i * 8);
@@ -64,6 +65,7 @@ __device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
 __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore) {
     int res = 0;
+    // TODO: Use unpack PTX instruction
 #pragma unroll
     for(int i = 0; i < 4; i++) {
         int a0 = (a >> (i * 8)) & 0xff;
@@ -96,14 +98,14 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
     __shared__ int As[32 * 9], Bs[32 * 9];
     // Load core
     for(int i = 0; i < 4096; i += 256) {
-        ac[i + tid] = __ldcg(acore + i + tid);
-        mc[i + tid] = __ldcg(mcore + i + tid);
+        ac[i + tid] = __ldca(acore + i + tid);
+        mc[i + tid] = __ldca(mcore + i + tid);
     }
     __syncthreads();
 
     for(int i = 0; i < mz; i += 8) {
-        As[v * 9 + u] = A[(x0 + v) * mz + i + u];
-        Bs[v * 9 + u] = B[(y0*4 + v) * mz + i + u];
+        As[v * 9 + u] = __ldcg(A + (x0 + v) * mz + i + u);
+        Bs[v * 9 + u] = __ldcg(B +(y0*4 + v) * mz + i + u);
         __syncthreads();
         // rs is at (x0 + tx, y0 + ty)
         rs[0] = rs[1] = rs[2] = rs[3] = 0;
@@ -120,5 +122,5 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
         __syncthreads();
     }
 
-    C[x * pz + y] = res;
+    __stwb(C + x * pz + y, res);
 }
