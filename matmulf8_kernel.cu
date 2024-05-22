@@ -54,7 +54,7 @@ __device__ __forceinline__ int reduce_f8(int vec, const int* __restrict__ acore)
 
 __device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore) {
     int res = 0;
-    // TODO: Use unpack PTX instruction
+    // TODO: Use unpack/pack PTX instruction
 #pragma unroll
     for(int i = 0; i < 4; i++) {
         res |= add((a >> (i * 8)) & 0xff, (b >> (i * 8)) & 0xff, acore) << (i * 8);
@@ -73,6 +73,7 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
         int c0 = (c >> (i * 8)) & 0xff;
         int m = access_byte(mcore, ((a0&0x7f)<<7) + (b0&0x7f));
         m |= (a0&0x80) ^ (b0&0x80);
+        // TODO: Use pack PTX instruction
         res |= add(m, c0, acore) << (i * 8);
     }
     return res;
@@ -115,6 +116,7 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
             }
         }
         dres = 0;
+        // TODO: Use pack PTX instruction
         for(int j = 0; j < 4; j++){
             dres |= reduce_f8(rs[j], ac) << (j*8);
         }
@@ -122,5 +124,5 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
         __syncthreads();
     }
 
-    __stwb(C + x * pz + y, res);
+    __stcs(C + x * pz + y, res);
 }
