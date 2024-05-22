@@ -30,7 +30,7 @@ The current format is `float8_e5m2`, but other variations can be introduced rela
 ## Speed
 
 This implementation offers a way to simulate the behavior of FP8 matrix multiplication with reasonable performance on
-older devices. In my test environment, this naive implementation achieves `139.1 GFLOPS` on `1/8` of the temporal slice of
+older devices. In my test environment, this naive implementation achieves `148.4 GFLOPS` on `1/8` of the temporal slice of
 an Nvidia A16 GPU, where the FP32 throughput is `560 GFLOPS`.
 
 It can enable engineers to develop and test FP8 algorithms on older devices without FP8 support, like laptops and

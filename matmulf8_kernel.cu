@@ -72,10 +72,11 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
         int b0 = (b >> (i * 8)) & 0xff;
         int c0 = (c >> (i * 8)) & 0xff;
         int m = access_byte(mcore, ((a0&0x7f)<<7) + (b0&0x7f));
-        m |= (a0&0x80) ^ (b0&0x80);
+        // m |= (a0&0x80) ^ (b0&0x80);
         // TODO: Use pack PTX instruction
         res |= add(m, c0, acore) << (i * 8);
     }
+    res |= (a & 0x80808080) ^ (b & 0x80808080);
     return res;
 }
 
