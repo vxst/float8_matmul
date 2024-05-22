@@ -68,12 +68,13 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
     // TODO: Use unpack PTX instruction
 #pragma unroll
     for(int i = 0; i < 4; i++) {
+        // TODO: This can utilize vshl/vshl PTX instructions
         int a0 = (a >> (i * 8)) & 0xff;
         int b0 = (b >> (i * 8)) & 0xff;
         int c0 = (c >> (i * 8)) & 0xff;
         int m = access_byte(mcore, ((a0&0x7f)<<7) + (b0&0x7f));
         // m |= (a0&0x80) ^ (b0&0x80);
-        // TODO: Use pack PTX instruction
+        // TODO: Use pack PTX instruction, currently is 4 copy with prmt.b32
         res |= add(m, c0, acore) << (i * 8);
     }
     res |= (a & 0x80808080) ^ (b & 0x80808080);
@@ -117,7 +118,7 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
             }
         }
         dres = 0;
-        // TODO: Use pack PTX instruction
+        // TODO: Use pack PTX instruction (NRH)
         for(int j = 0; j < 4; j++){
             dres |= reduce_f8(rs[j], ac) << (j*8);
         }
