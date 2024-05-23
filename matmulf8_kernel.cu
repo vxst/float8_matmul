@@ -83,11 +83,25 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
     mltres |= access_byte(mcore, (idx0>>16)&0xffff) << 24;
     mltres |= (a & 0x80808080) ^ (b & 0x80808080);
 
+    int m0, c0;
+    m0 = ((mltres & 0xff) || (((mltres>>8) & 0xff)<<16)) << 7;
+    c0 = ((c & 0xff) || (((c>>8) & 0xff)<<16));
+    idx0 = m0+c0;
+    res |= access_byte(acore, idx0&0xffff);
+    res |= access_byte(acore, (idx0>>16)&0xffff) << 8;
+
+    mltres >>= 16;
+    m0 = ((mltres & 0xff) || (((mltres>>8) & 0xff)<<16)) << 7;
+    c0 = ((c>>16 & 0xff) || (((c>>24) & 0xff)<<16));
+    idx0 = m0+c0;
+    res |= access_byte(acore, idx0&0xffff) << 16;
+    res |= access_byte(acore, (idx0>>16)&0xffff) << 24;
+
     // TODO: Use unpack PTX instruction
-    for(int i = 0; i < 4; i++) {
-        int c0 = (c >> (i * 8)) & 0xff;
-        res |= add((mltres>>(i*8))&0xff, c0, acore) << (i * 8);
-    }
+    // for(int i = 0; i < 4; i++) {
+        // int c0 = (c >> (i * 8)) & 0xff;
+        // res |= add((mltres>>(i*8))&0xff, c0, acore) << (i * 8);
+    // }
     return res;
 }
 
