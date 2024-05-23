@@ -67,16 +67,16 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
     int res = 0;
     int mltres = 0;
     // TODO: Use unpack PTX instruction
-    int a0, b0, idx0;
+    int a0, b0, idx0, ax, bx;
     a0 = ((a & 0xff) || (((a>>8) & 0xff)<<16)) << 7;
     b0 = ((b & 0xff) || (((b>>8) & 0xff)<<16));
     idx0 = a0+b0;
     mltres |= access_byte(mcore, idx0&0xffff);
     mltres |= access_byte(mcore, (idx0>>16)&0xffff) << 8;
-    a >>= 16;
-    a0 = ((a & 0xff) || (((a>>8) & 0xff)<<16)) << 7;
-    b >>= 16;
-    b0 = ((b & 0xff) || (((b>>8) & 0xff)<<16));
+    ax = a>>16;
+    a0 = ((ax & 0xff) || (((ax>>8) & 0xff)<<16)) << 7;
+    bx = b>>16;
+    b0 = ((bx & 0xff) || (((bx>>8) & 0xff)<<16));
     idx0 = a0+b0;
     mltres |= access_byte(mcore, idx0&0xffff) << 16;
     mltres |= access_byte(mcore, (idx0>>16)&0xffff) << 24;
