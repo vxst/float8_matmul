@@ -30,10 +30,15 @@ The current format is `float8_e5m2`, but other variations can be introduced rela
 ## Speed
 
 This implementation offers a way to simulate the behavior of FP8 matrix multiplication with reasonable performance on
-older devices. In my test environment, this naive implementation achieves `19.1 GFLOPS` on `1/8` of the temporal slice of
-an Nvidia A16 GPU, where the FP32 throughput is `560 GFLOPS`. If we consider the shared memory will stay in L1(which is
-the normal behavior for a real GPU), the performance will be perhaps `100GFLOPS` to `400GFLOPS`, as Nsights
-reports 95% of the time is spent on Mio throttling, which usually won't happen on this scale on a real L1.
+older devices. In my test environment, where the Tensor Core FP32 throughput is `560 GFLOPS`(`1/8 temporal slice`
+of `A16`), the performance will be between `160GFLOPS` to `400GFLOPS` exculding shared memory swap(which doesn't
+happen in MIG or real GPU), as Nsights reports 95% of the time is spent on Mio throttling if two matrices are
+randomized, so theory performance is around `300GFLOPS`, (`19.1GFLOPS` with swapping and about `95%` time Mio related
+throttling waiting for swapping), with a full zero matrix, the performance on `1/8` temporal slice is `166GFLOPS`,
+since SASS code indicates the shared memory is always accessed(there is no layer between L1 and RF by design),
+this should be the minimal performance on real world as full zero matrix is the worst case for shared memory
+bank conflict. The performance for random matrix on a device with real shared memory should be 25% to 50% of
+its FP32 performance(depends on the specific architecture).
 
 It can enable engineers to develop and test FP8 algorithms on older devices without FP8 support, like laptops and
 personal computers, and then deploy them on newer devices with FP8 support.

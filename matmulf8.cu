@@ -53,7 +53,7 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
 }
 
 int main() {
-    int n = 1024, m = 1024, p = 1024;
+    int n = 4096, m = 4096, p = 4096;
     int *A, *B, *C;
     cudaSetDevice(0);
     cudaFree(0);
@@ -69,11 +69,13 @@ int main() {
     int* mcore = load_core("mltcore.bin");
     for(int i = 0; i < n * m / 4; i++) {
         A[i] = rand();
-        A[i] &= 0x7f7f7f7f;
+        // A[i] &= 0x7f7f7f7f;
+        A[i] = 0;
     }
     for(int i = 0; i < m * p / 4; i++) {
         B[i] = rand();
-        B[i] &= 0x7f7f7f7f;
+        // B[i] &= 0x7f7f7f7f;
+        B[i] = 0;
     }
     float t = matmul(A, B, C, n, m, p, acore, mcore);
     printf("Time: %f ms\n", t);
