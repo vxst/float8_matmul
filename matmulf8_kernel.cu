@@ -65,19 +65,22 @@ __device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
 __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore) {
     int res = 0;
+    int mltres = 0;
     // TODO: Use unpack PTX instruction
 #pragma unroll
     for(int i = 0; i < 4; i++) {
         // TODO: This can utilize vshl/vshl PTX instructions
         int a0 = (a >> (i * 8)) & 0xff;
         int b0 = (b >> (i * 8)) & 0xff;
-        int c0 = (c >> (i * 8)) & 0xff;
         int m = access_byte(mcore, ((a0&0x7f)<<7) + (b0&0x7f));
-        // m |= (a0&0x80) ^ (b0&0x80);
+        mltres |= m << (i * 8);
         // TODO: Use pack PTX instruction, currently is 4 copy with prmt.b32
-        res |= add(m, c0, acore) << (i * 8);
     }
-    res |= (a & 0x80808080) ^ (b & 0x80808080);
+    mltres |= (a & 0x80808080) ^ (b & 0x80808080);
+    for(int i = 0; i < 4; i++) {
+        int c0 = (c >> (i * 8)) & 0xff;
+        res |= add((mltres>>(i*8))&0xff, c0, acore) << (i * 8);
+    }
     return res;
 }
 
