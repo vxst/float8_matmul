@@ -64,18 +64,16 @@ __device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore
 
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
 __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore) {
-    int res = 0;
+    int mlt = 0;
     // TODO: Use unpack PTX instruction
 #pragma unroll
     for(int i = 0; i < 4; i++) {
         int a0 = (a >> (i * 8)) & 0xff;
         int b0 = (b >> (i * 8)) & 0xff;
-        int c0 = (c >> (i * 8)) & 0xff;
-        int m = access_byte(mcore, ((a0&0xff)<<7) + (b0&0xff));
-        m |= (a0&0x80) ^ (b0&0x80);
-        res |= add(m, c0, acore) << (i * 8);
+        mlt |= access_byte(mcore, ((a0&0xff)<<7) + (b0&0xff)) << (i * 8);
     }
-    return res;
+    mlt |= (a&0x80808080) ^ (b&0x80808080);
+    return addv4(c, mlt, acore);
 }
 
 // A 32x8 core, do 32x32 matrix multiplication
