@@ -76,6 +76,8 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
     a0 = ((ax & 0xff) || (((ax>>8) & 0xff)<<16)) << 7;
     bx = b>>16;
     b0 = ((bx & 0xff) || (((bx>>8) & 0xff)<<16));
+    // __vadd2 is the same speed in my env, however it's seriously influenced by shared memory flush
+    // due to 1/8 temporal slice, I don't have HW to test it on normal card
     idx0 = a0+b0;
     mltres |= access_byte(mcore, idx0&0xffff) << 16;
     mltres |= access_byte(mcore, (idx0>>16)&0xffff) << 24;
