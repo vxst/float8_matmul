@@ -53,7 +53,7 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
 }
 
 int main() {
-    int n = 4096, m = 4096, p = 4096;
+    int n = 1024, m = 1024, p = 1024;
     int *A, *B, *C;
     cudaSetDevice(0);
     cudaFree(0);
