@@ -53,7 +53,7 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
 }
 
 int main() {
-    int n = 4096, m = 4096, p = 4096;
+    int n = 2048, m = 2048, p = 2048;
     int *A, *B, *C;
     cudaMallocHost(&A, n * m * sizeof(int) / 4);
     cudaMallocHost(&B, m * p * sizeof(int) / 4);
