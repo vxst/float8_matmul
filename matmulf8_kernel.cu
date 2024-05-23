@@ -104,8 +104,8 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
     __syncthreads();
 
     for(int i = 0; i < mz; i += 8) {
-        As[v * 9 + u] = __ldcg(A + (x0 + v) * mz + i + u);
-        Bs[v * 9 + u] = __ldcg(B +(y0*4 + v) * mz + i + u);
+        As[v * 9 + u] = A[(x0 + v) * mz + i + u];
+        Bs[v * 9 + u] = B[(y0*4 + v) * mz + i + u];
         __syncthreads();
         // rs is at (x0 + tx, y0 + ty)
         rs[0] = rs[1] = rs[2] = rs[3] = 0;
@@ -122,5 +122,5 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
         __syncthreads();
     }
 
-    __stwb(C + x * pz + y, res);
+    C[x * pz + y] = res;
 }
