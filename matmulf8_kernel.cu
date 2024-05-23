@@ -71,7 +71,7 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
         int a0 = (a >> (i * 8)) & 0xff;
         int b0 = (b >> (i * 8)) & 0xff;
         int c0 = (c >> (i * 8)) & 0xff;
-        int m = access_byte(mcore, ((a0&0x7f)<<7) + (b0&0x7f));
+        int m = access_byte(mcore, ((a0&0xff)<<7) + (b0&0xff));
         m |= (a0&0x80) ^ (b0&0x80);
         res |= add(m, c0, acore) << (i * 8);
     }
