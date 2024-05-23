@@ -30,8 +30,8 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
 
     cudaStream_t stream;
     cudaStreamCreate(&stream);
-    cudaMemcpyAsync(d_A, A, n * m * sizeof(int), cudaMemcpyHostToDevice, stream);
-    cudaMemcpyAsync(d_B, B, m * p * sizeof(int), cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(d_A, A, n * m * sizeof(int) / 4, cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(d_B, B, m * p * sizeof(int) / 4, cudaMemcpyHostToDevice, stream);
     cudaMemcpyAsync(d_acore, acore, 16384, cudaMemcpyHostToDevice, stream);
     cudaMemcpyAsync(d_mcore, mcore, 16384, cudaMemcpyHostToDevice, stream);
 
@@ -46,7 +46,7 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&t, start, stop);
 
-    cudaMemcpyAsync(C, d_C, n * p * sizeof(int), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(C, d_C, n * p * sizeof(int) / 4, cudaMemcpyDeviceToHost, stream);
     cudaFree(d_A);
     cudaFree(d_B);
     cudaFree(d_C);
