@@ -26,8 +26,8 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
     cudaMalloc(&d_C, n * p / 4 * sizeof(int));
     cudaMalloc(&d_acore, 16384);
     cudaMalloc(&d_mcore, 16384);
-    cudaMemcpy(d_A, A, n * m * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B, B, m * p * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_A, A, n * m * sizeof(int) / 4, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, B, m * p * sizeof(int) / 4, cudaMemcpyHostToDevice);
     cudaMemcpy(d_acore, acore, 16384, cudaMemcpyHostToDevice);
     cudaMemcpy(d_mcore, mcore, 16384, cudaMemcpyHostToDevice);
 
@@ -42,7 +42,7 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&t, start, stop);
 
-    cudaMemcpy(C, d_C, n * p * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(C, d_C, n * p * sizeof(int) / 4, cudaMemcpyDeviceToHost);
     cudaFree(d_A);
     cudaFree(d_B);
     cudaFree(d_C);
@@ -55,6 +55,9 @@ float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore
 int main() {
     int n = 4096, m = 4096, p = 4096;
     int *A, *B, *C;
+    cudaSetDevice(0);
+    cudaFree(0);
+    
     cudaMallocHost(&A, n * m * sizeof(int) / 4);
     cudaMallocHost(&B, m * p * sizeof(int) / 4);
     cudaMallocHost(&C, n * p * sizeof(int) / 4);
