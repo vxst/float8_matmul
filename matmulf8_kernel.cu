@@ -67,16 +67,21 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
     int res = 0;
     int mltres = 0;
     // TODO: Use unpack PTX instruction
-#pragma unroll
-    for(int i = 0; i < 4; i++) {
-        // TODO: This can utilize vshl/vshl PTX instructions
-        int a0 = (a >> (i * 8)) & 0xff;
-        int b0 = (b >> (i * 8)) & 0xff;
-        int m = access_byte(mcore, ((a0&0x7f)<<7) + (b0&0x7f));
-        mltres |= m << (i * 8);
-        // TODO: Use pack PTX instruction, currently is 4 copy with prmt.b32
-    }
+    int a0, b0, idx0;
+    a0 = ((a & 0xff) || (((a>>8) & 0xff)<<16)) << 7;
+    b0 = ((b & 0xff) || (((b>>8) & 0xff)<<16));
+    idx0 = a0+b0;
+    mltres |= access_byte(mcore, idx0&0xffff);
+    mltres |= access_byte(mcore, (idx0>>16)&0xffff) << 8;
+    a >>= 16;
+    a0 = ((a & 0xff) || (((a>>8) & 0xff)<<16)) << 7;
+    b >>= 16;
+    b0 = ((b & 0xff) || (((b>>8) & 0xff)<<16));
+    idx0 = a0+b0;
+    mltres |= access_byte(mcore, idx0&0xffff) << 16;
+    mltres |= access_byte(mcore, (idx0>>16)&0xffff) << 24;
     mltres |= (a & 0x80808080) ^ (b & 0x80808080);
+
     for(int i = 0; i < 4; i++) {
         int c0 = (c >> (i * 8)) & 0xff;
         res |= add((mltres>>(i*8))&0xff, c0, acore) << (i * 8);
