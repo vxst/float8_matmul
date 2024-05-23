@@ -66,7 +66,6 @@ __device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore
 __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore) {
     int res = 0;
     int mltres = 0;
-    // TODO: Use unpack PTX instruction
     int a0, b0, idx0, ax, bx;
     a0 = ((a & 0xff) || (((a>>8) & 0xff)<<16)) << 7;
     b0 = ((b & 0xff) || (((b>>8) & 0xff)<<16));
@@ -82,6 +81,7 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
     mltres |= access_byte(mcore, (idx0>>16)&0xffff) << 24;
     mltres |= (a & 0x80808080) ^ (b & 0x80808080);
 
+    // TODO: Use unpack PTX instruction
     for(int i = 0; i < 4; i++) {
         int c0 = (c >> (i * 8)) & 0xff;
         res |= add((mltres>>(i*8))&0xff, c0, acore) << (i * 8);
