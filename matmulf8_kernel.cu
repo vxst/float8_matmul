@@ -18,9 +18,8 @@
 #include <cinttypes>
 #include "matmulf8_kernel.cuh"
 
-#define FLOAT8_SIGN(x) ((x >> 7) & 0x01)
 #define FLOAT8_EXP(x)  ((x >> 2) & 0x1F)
-#define FLOAT8_MANT(x) (x & 0x03)
+#define FLOAT8_MANT(x) (x & 0x83)
 #define FLOAT8_CONSTRUCT(sign, exp, mant) ((sign << 7) | (exp << 2) | (mant))
 #define FLOAT8_NAN 0x7E
 #define FLOAT8_ISNAN(x) ((FLOAT8_EXP(x) == 0x1F) && (FLOAT8_MANT(x) != 0))
@@ -36,13 +35,11 @@ __host__ __device__ __forceinline__ uint8_t float8_e5m2_add(uint8_t a, uint8_t b
     if (b == 0) return a;
 
     // Extract sign, exponent and mantissa from inputs
-    uint8_t sign_a = FLOAT8_SIGN(a);
     uint8_t exp_a = FLOAT8_EXP(a);
-    uint8_t mant_a = FLOAT8_MANT(a);
+    int8_t mant_a = FLOAT8_MANT(a);
 
-    uint8_t sign_b = FLOAT8_SIGN(b);
     uint8_t exp_b = FLOAT8_EXP(b);
-    uint8_t mant_b = FLOAT8_MANT(b);
+    int8_t mant_b = FLOAT8_MANT(b);
 
     // Handle subnormal numbers (when exponent is 0)
     if (exp_a == 0) {
@@ -69,26 +66,11 @@ __host__ __device__ __forceinline__ uint8_t float8_e5m2_add(uint8_t a, uint8_t b
         mant_a >>= shift;
     }
 
-    uint8_t result_sign, result_exp;
+    uint8_t result_sign, result_exp = exp_a;
     uint8_t result_mant;
-
-    // Compute result mantissa and handle overflow
-    if (sign_a == sign_b) {
-        // Same sign, add mantissas
-        result_mant = mant_a + mant_b;
-        result_sign = sign_a;
-        result_exp = exp_a;
-    } else {
-        // Different signs, subtract mantissas
-        if (mant_a > mant_b) {
-            result_mant = mant_a - mant_b;
-            result_sign = sign_a;
-        } else {
-            result_mant = mant_b - mant_a;
-            result_sign = sign_b;
-        }
-        result_exp = exp_a;
-    }
+    result_mant = mant_a + mant_b;
+    result_sign = result_mant >> 7;
+    result_mant &= 0x7F;
 
     // Normalize result
     if (result_mant >= 0x08) {
