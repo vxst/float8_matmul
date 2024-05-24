@@ -5,7 +5,7 @@
 
 
 int a[10], b[10], c[10], d[10];
-int acore[4096], mcore[4096];
+int mcore[4096];
 
 int main(){
     FILE* fma_ref = fopen("test_fma.bin", "rb");
@@ -15,9 +15,6 @@ int main(){
     fread(d, sizeof(int), 10, fma_ref);
     fclose(fma_ref);
 
-    FILE* apdcore = fopen("../cores/f8e5m2_acore.bin", "rb");
-    fread(acore, sizeof(int), 4096, apdcore);
-    fclose(apdcore);
     FILE* mltcore = fopen("../cores/f8e5m2_mcore.bin", "rb");
     fread(mcore, sizeof(int), 4096, mltcore);
     fclose(mltcore);

@@ -19,7 +19,7 @@
 #include "load_core.cuh"
 #include "matmulf8_kernel.cuh"
 
-float matmul(int* A, int* B, int* C, int n, int m, int p, int* acore, int* mcore) {
+float matmul(int* A, int* B, int* C, int n, int m, int p, int* mcore) {
     int* d_A, *d_B, *d_C, *d_mcore;
     cudaMalloc(&d_A, n * m / 4 * sizeof(int));
     cudaMalloc(&d_B, m * p / 4 * sizeof(int));

@@ -6,7 +6,7 @@
 
 void test_cross_line(u_int8_t *A, u_int8_t *B, u_int8_t *C, int n, int m, int p,
                      int target_x, int target_y,
-                     int *acore, int *mcore){
+                     int *mcore){
     int success = 1;
     for(int i = 0; i < n * m; i++) {
         A[i] = 0;
@@ -25,7 +25,7 @@ void test_cross_line(u_int8_t *A, u_int8_t *B, u_int8_t *C, int n, int m, int p,
         C[i] = 0xff;
     }
 
-    float t = matmul((int *)A, (int *)B, (int *)C, n, m, p, acore, mcore);
+    float t = matmul((int *)A, (int *)B, (int *)C, n, m, p, mcore);
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < p; j++) {
@@ -53,7 +53,6 @@ void test_cross_line(u_int8_t *A, u_int8_t *B, u_int8_t *C, int n, int m, int p,
 int main(){
     cudaSetDevice(0);
 
-    int* acore = load_core("../cores/f8e5m2_acore.bin");
     int* mcore = load_core("../cores/f8e5m2_mcore.bin");
     int n = 128, m = 128, p = 128;
     u_int8_t *A, *B, *C;
@@ -66,7 +65,7 @@ int main(){
 
     for(int t = 0; t < 10; t++){
         int x = dis(gen), y = dis(gen);
-        test_cross_line(A, B, C, n, m, p, x, y, acore, mcore);
+        test_cross_line(A, B, C, n, m, p, x, y, mcore);
     }
 
     cudaFreeHost(A);
