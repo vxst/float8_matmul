@@ -3,3 +3,4 @@
 *.prof
 test/*.bin
 test/test_add
+test/test_fma

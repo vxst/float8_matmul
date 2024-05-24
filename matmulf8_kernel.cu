@@ -67,7 +67,11 @@ __device__ __forceinline__ int addv4(int a, int b, int* __restrict__ acore) {
 }
 
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
+#ifdef TEST
+__device__ __host__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore) {
+#else
 __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore) {
+#endif
     int mlt = 0;
     // TODO: Use unpack PTX instruction
 #pragma unroll
