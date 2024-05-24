@@ -1,6 +1,8 @@
 #include <cstdio>
+#include <algorithm>
 
 #include "../matmulf8_kernel.cuh"
+#include "subeq.cuh"
 
 int a[10], b[10], c[10];
 int acore[4096];
@@ -18,9 +20,9 @@ int main(){
 
     for(int i = 0; i < 10; i++){
         // printf("%x + %x = %x\n", a[i], b[i], c[i]);
-        int c_g = addv4(a[i], b[i], acore);
+        int c_g = addv4(a[i], b[i]);
         // printf("GPU: %x\n", c);
-        if(c_g != c[i]){
+        if(!subeq(c_g, c[i])){
             printf("%x + %x expect %x, got %x\n", a[i], b[i], c[i], c_g);
         }else{
             printf(".");

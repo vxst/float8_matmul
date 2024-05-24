@@ -15,62 +15,137 @@
 
 
 #include <cuda_runtime.h>
+#include <cinttypes>
 #include "matmulf8_kernel.cuh"
 
+#define FLOAT8_SIGN(x) ((x >> 7) & 0x01)
+#define FLOAT8_EXP(x)  ((x >> 2) & 0x1F)
+#define FLOAT8_MANT(x) (x & 0x03)
+#define FLOAT8_CONSTRUCT(sign, exp, mant) ((sign << 7) | (exp << 2) | (mant))
+#define FLOAT8_NAN 0x7E
+#define FLOAT8_ISNAN(x) ((FLOAT8_EXP(x) == 0x1F) && (FLOAT8_MANT(x) != 0))
+
+// TODO: Vectorize this function
+__host__ __device__ __forceinline__ uint8_t float8_e5m2_add(uint8_t a, uint8_t b) {
+    if (FLOAT8_ISNAN(a) || FLOAT8_ISNAN(b)) {
+        return FLOAT8_NAN;
+    }
+
+    if (a == 0) return b;
+    if (b == 0) return a;
+
+    // Extract sign, exponent and mantissa from inputs
+    uint8_t sign_a = FLOAT8_SIGN(a);
+    uint8_t exp_a = FLOAT8_EXP(a);
+    uint8_t mant_a = FLOAT8_MANT(a);
+
+    uint8_t sign_b = FLOAT8_SIGN(b);
+    uint8_t exp_b = FLOAT8_EXP(b);
+    uint8_t mant_b = FLOAT8_MANT(b);
+
+    // Handle subnormal numbers (when exponent is 0)
+    if (exp_a == 0) {
+        exp_a = 1;
+    } else {
+        mant_a |= 0x04;
+    }
+
+    if (exp_b == 0) {
+        exp_b = 1;
+    } else {
+        mant_b |= 0x04;
+    }
+
+    // Align exponents
+    int shift;
+    if (exp_a > exp_b) {
+        shift = exp_a - exp_b;
+        exp_b = exp_a;
+        mant_b >>= shift;
+    } else if (exp_b > exp_a) {
+        shift = exp_b - exp_a;
+        exp_a = exp_b;
+        mant_a >>= shift;
+    }
+
+    uint8_t result_sign, result_exp;
+    uint8_t result_mant;
+
+    // Compute result mantissa and handle overflow
+    if (sign_a == sign_b) {
+        // Same sign, add mantissas
+        result_mant = mant_a + mant_b;
+        result_sign = sign_a;
+        result_exp = exp_a;
+    } else {
+        // Different signs, subtract mantissas
+        if (mant_a > mant_b) {
+            result_mant = mant_a - mant_b;
+            result_sign = sign_a;
+        } else {
+            result_mant = mant_b - mant_a;
+            result_sign = sign_b;
+        }
+        result_exp = exp_a;
+    }
+
+    // Normalize result
+    if (result_mant >= 0x08) {
+        result_mant >>= 1;
+        result_exp += 1;
+    }
+
+    // Mask out the implicit leading 1
+    if (result_exp > 1) {
+        result_mant &= 0x03;
+    }
+
+    // Check for overflow into NaN range
+    if (result_exp > 0x1F) {
+        return FLOAT8_NAN;
+    }
+    if (result_exp == 1 && result_mant < 4) {
+        result_exp = 0;
+    }
+    uint8_t result = FLOAT8_CONSTRUCT(result_sign, result_exp, result_mant);
+    if ((result & 0x7F) >= 0x7C) {
+        result = (result&0x80) | 0x7C; // INF
+    }
+
+    return result;
+}
 
 __device__ __host__ __forceinline__ int access_byte(const int* __restrict__ data, int i) {
     return data[i>>2] >> ((i&3)<<3) & 0xff;
 }
 
-__device__ __host__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
-#ifdef DB
-    int r = 0;
-    if((a&0x80)^(b&0x80)) {
-        if(bt > at){
-            r = access_byte(acore, (bt << 7) + at);
-        }else{
-            r = access_byte(acore, (at << 7) + bt);
-        }
-        if(((b&0x7f) > (a&0x7f)) && (b&0x80)){
-            r ^= 0x80;
-        }
-    } else {
-        if(at <= bt){
-            r = access_byte(acore, (at << 7) + bt);
-        }else{
-            r = access_byte(acore, (bt << 7) + at);
-        }
-        r |= a & 0x80;
-    }
-    return r;
-#else
-    return access_byte(acore, (b << 7) + a);
-#endif
+__device__ __host__ __forceinline__ int add(int a, int b){
+    return float8_e5m2_add(a, b);
 }
 
-__device__ __forceinline__ int reduce_f8(int vec, const int* __restrict__ acore) {
-    return add(add(add((vec >> 24) & 0xff, (vec >> 16) & 0xff, acore), (vec >> 8) & 0xff, acore), vec & 0xff, acore);
+__device__ __forceinline__ int reduce_f8(int vec) {
+    return add(add(add((vec >> 24) & 0xff, (vec >> 16) & 0xff), (vec >> 8) & 0xff), vec & 0xff);
 }
 
 #ifdef TEST
-__device__ __host__ int addv4(int a, int b, const int* __restrict__ acore) {
+__device__ __host__ int addv4(int a, int b) {
 #else
-__device__ __forceinline__ int addv4(int a, int b, int* __restrict__ acore) {
+__device__ __forceinline__ int addv4(int a, int b) {
 #endif
     int res = 0;
     // TODO: Use unpack PTX instruction
 #pragma unroll
     for(int i = 0; i < 4; i++) {
-        res |= add((a >> (i * 8)) & 0xff, (b >> (i * 8)) & 0xff, acore) << (i * 8);
+        res |= add((a >> (i * 8)) & 0xff, (b >> (i * 8)) & 0xff) << (i * 8);
     }
     return res;
 }
 
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
 #ifdef TEST
-__device__ __host__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore) {
+__device__ __host__ int fma8v4(int a, int b, int c, int* __restrict__ mcore) {
 #else
-__device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore) {
+__device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ mcore) {
 #endif
     int mlt = 0;
     // TODO: Use unpack PTX instruction
@@ -81,14 +156,14 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ aco
         mlt |= access_byte(mcore, ((a0&0xff)<<7) + (b0&0xff)) << (i * 8);
     }
     mlt |= (a&0x80808080) ^ (b&0x80808080);
-    return addv4(c, mlt, acore);
+    return addv4(c, mlt);
 }
 
 // A 32x8 core, do 32x32 matrix multiplication
 // tx: 0-31, ty: 0-7
 __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restrict__ C,
                          int n, int m, int p,
-                         int* __restrict__ acore, int* __restrict__ mcore) {
+                         int* __restrict__ mcore) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     int x0 = blockIdx.x * blockDim.x, y0 = blockIdx.y * blockDim.y;
@@ -100,11 +175,10 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
     int res = 0;
     int dres;
     int rs[4];
-    __shared__ int ac[4096], mc[4096];
+    __shared__ int mc[4096];
     __shared__ int As[32 * 9], Bs[32 * 9];
     // Load core
     for(int i = 0; i < 4096; i += 256) {
-        ac[i + tid] = __ldca(acore + i + tid);
         mc[i + tid] = __ldca(mcore + i + tid);
     }
     __syncthreads();
@@ -117,14 +191,14 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
         rs[0] = rs[1] = rs[2] = rs[3] = 0;
         for(int j = 0; j < 8; j++) {
             for(int k = 0; k < 4; k++){
-                rs[k] = fma8v4(As[tx*9+j], Bs[(ty*4+k)*9+j], rs[k], ac, mc);
+                rs[k] = fma8v4(As[tx*9+j], Bs[(ty*4+k)*9+j], rs[k], mc);
             }
         }
         dres = 0;
         for(int j = 0; j < 4; j++){
-            dres |= reduce_f8(rs[j], ac) << (j*8);
+            dres |= reduce_f8(rs[j]) << (j*8);
         }
-        res = addv4(res, dres, ac);
+        res = addv4(res, dres);
         __syncthreads();
     }
 

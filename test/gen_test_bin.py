@@ -35,4 +35,4 @@ def gen_fma_test_bin():
 if __name__ == '__main__':
     gen_add_test_bin()
     gen_fma_test_bin()
-    print(float8_e5m2(128.0).tobytes().hex())
+    print(float8_e5m2(2.0).tobytes().hex())

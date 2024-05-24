@@ -19,10 +19,10 @@
 #include <cuda_runtime.h>
 
 #ifdef TEST
-__device__ __host__ int addv4(int a, int b, const int* __restrict__ acore);
-__device__ __host__ int fma8v4(int a, int b, int c, int* __restrict__ acore, int* __restrict__ mcore);
+__device__ __host__ int addv4(int a, int b);
+__device__ __host__ int fma8v4(int a, int b, int c, int* __restrict__ mcore);
 #endif
 
 __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restrict__ C,
                          int n, int m, int p,
-                         int* __restrict__ acore, int* __restrict__ mcore);
+                         int* __restrict__ mcore);
