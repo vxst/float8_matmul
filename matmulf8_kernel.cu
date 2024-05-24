@@ -27,9 +27,10 @@
 
 // TODO: Vectorize this function
 __host__ __device__ __forceinline__ uint8_t float8_e5m2_add(uint8_t a, uint8_t b) {
-    if (FLOAT8_ISNAN(a) || FLOAT8_ISNAN(b)) {
-        return FLOAT8_NAN;
-    }
+    // Assume there is no NaN, it's (not?) useful for matmul
+    // if (FLOAT8_ISNAN(a) || FLOAT8_ISNAN(b)) {
+    //     return FLOAT8_NAN;
+    // }
 
     if (a == 0) return b;
     if (b == 0) return a;
@@ -95,22 +96,20 @@ __host__ __device__ __forceinline__ uint8_t float8_e5m2_add(uint8_t a, uint8_t b
         result_exp += 1;
     }
 
-    // Mask out the implicit leading 1
-    if (result_exp > 1) {
-        result_mant &= 0x03;
-    }
+    // Mask out the implicit leading 1, add only need once
+    result_mant &= 0x03;
 
     // Check for overflow into NaN range
-    if (result_exp > 0x1F) {
-        return FLOAT8_NAN;
-    }
+    // if (result_exp > 0x1F) {
+    //     return FLOAT8_NAN;
+    // }
     if (result_exp == 1 && result_mant < 4) {
         result_exp = 0;
     }
     uint8_t result = FLOAT8_CONSTRUCT(result_sign, result_exp, result_mant);
-    if ((result & 0x7F) >= 0x7C) {
-        result = (result&0x80) | 0x7C; // INF
-    }
+    // if ((result & 0x7F) >= 0x7C) {
+    //     result = (result&0x80) | 0x7C;
+    // }
 
     return result;
 }

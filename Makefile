@@ -1,6 +1,6 @@
 NVCC = nvcc
 
-CFLAGS = -O3 -arch=native
+CFLAGS = -O3 -arch=native -Xptxas --warn-on-spills --generate-line-info
 
 MAIN_CU = main.cu
 KERNEL_CU = load_core.cu matmulf8.cu matmulf8_kernel.cu
