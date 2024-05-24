@@ -18,11 +18,11 @@
 #include "matmulf8_kernel.cuh"
 
 
-__device__ __forceinline__ int access_byte(const int* __restrict__ data, int i) {
+__device__ __host__ __forceinline__ int access_byte(const int* __restrict__ data, int i) {
     return data[i>>2] >> ((i&3)<<3) & 0xff;
 }
 
-__device__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
+__device__ __host__ __forceinline__ int add(int a, int b, const int* __restrict__ acore){
 #ifdef DB
     int r = 0;
     if((a&0x80)^(b&0x80)) {
@@ -52,7 +52,11 @@ __device__ __forceinline__ int reduce_f8(int vec, const int* __restrict__ acore)
     return add(add(add((vec >> 24) & 0xff, (vec >> 16) & 0xff, acore), (vec >> 8) & 0xff, acore), vec & 0xff, acore);
 }
 
-__device__ __forceinline__ int addv4(int a, int b, const int* __restrict__ acore) {
+#ifdef TEST
+__device__ __host__ int addv4(int a, int b, const int* __restrict__ acore) {
+#else
+__device__ __forceinline__ int addv4(int a, int b, int* __restrict__ acore) {
+#endif
     int res = 0;
     // TODO: Use unpack PTX instruction
 #pragma unroll

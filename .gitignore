@@ -1,3 +1,5 @@
 *.py
 *.out
 *.prof
+test/*.bin
+test/test_add
