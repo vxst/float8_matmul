@@ -15,11 +15,11 @@ int main() {
     cudaMallocHost(&B, m * p * sizeof(int) / 4);
     cudaMallocHost(&C, n * p * sizeof(int) / 4);
 #ifdef DB
-    int* acore = load_core("addcore.bin");
+    int* acore = load_core("cores/f8e5m2_adbcore.bin");
 #else
-    int* acore = load_core("apdcore.bin");
+    int* acore = load_core("cores/f8e5m2_acore.bin");
 #endif
-    int* mcore = load_core("mltcore.bin");
+    int* mcore = load_core("cores/f8e5m2_mcore.bin");
     for(int i = 0; i < n * m / 4; i++) {
         A[i] = rand();
         // A[i] &= 0x7f7f7f7f;

@@ -12,7 +12,7 @@ int main(){
     fread(c, sizeof(int), 10, add_ref);
     fclose(add_ref);
 
-    FILE* apdcore = fopen("../apdcore.bin", "rb");
+    FILE* apdcore = fopen("../cores/f8e5m2_acore.bin", "rb");
     fread(acore, sizeof(int), 4096, apdcore);
     fclose(apdcore);
 

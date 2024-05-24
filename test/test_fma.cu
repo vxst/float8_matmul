@@ -13,10 +13,10 @@ int main(){
     fread(d, sizeof(int), 10, fma_ref);
     fclose(fma_ref);
 
-    FILE* apdcore = fopen("../apdcore.bin", "rb");
+    FILE* apdcore = fopen("../cores/f8e5m2_acore.bin", "rb");
     fread(acore, sizeof(int), 4096, apdcore);
     fclose(apdcore);
-    FILE* mltcore = fopen("../mltcore.bin", "rb");
+    FILE* mltcore = fopen("../cores/f8e5m2_mcore.bin", "rb");
     fread(mcore, sizeof(int), 4096, mltcore);
     fclose(mltcore);
 

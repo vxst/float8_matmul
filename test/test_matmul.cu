@@ -53,8 +53,8 @@ void test_cross_line(u_int8_t *A, u_int8_t *B, u_int8_t *C, int n, int m, int p,
 int main(){
     cudaSetDevice(0);
 
-    int* acore = load_core("../apdcore.bin");
-    int* mcore = load_core("../mltcore.bin");
+    int* acore = load_core("../cores/f8e5m2_acore.bin");
+    int* mcore = load_core("../cores/f8e5m2_mcore.bin");
     int n = 128, m = 128, p = 128;
     u_int8_t *A, *B, *C;
 

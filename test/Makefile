@@ -32,3 +32,5 @@ $(BIN_FILE): gen_test_bin.py
 
 clean:
 	rm -f $(OUTPUT_EXE) $(BIN_FILE)
+
+.PHONY: clean test
