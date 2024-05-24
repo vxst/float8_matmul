@@ -6,3 +6,4 @@ test/*.bin
 test/test_add
 test/test_fma
 test/test_matmul
+bench

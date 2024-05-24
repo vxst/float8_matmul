@@ -6,6 +6,9 @@ MAIN_CU = main.cu
 KERNEL_CU = load_core.cu matmulf8.cu matmulf8_kernel.cu
 OUTPUT_BENCH = bench
 
+run: $(OUTPUT_BENCH)
+	./$(OUTPUT_BENCH)
+
 $(OUTPUT_BENCH): $(MAIN_CU) $(KERNEL_CU)
 	$(NVCC) $(CFLAGS) $(MAIN_CU) $(KERNEL_CU) -o $(OUTPUT_BENCH)
 
@@ -16,4 +19,4 @@ clean:
 	rm -f $(OUTPUT_BENCH)
 	cd test && $(MAKE) clean
 
-.PHONY: clean test
+.PHONY: clean test run
