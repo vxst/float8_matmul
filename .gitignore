@@ -1,4 +1,5 @@
 *.py
+!test/*.py
 *.out
 *.prof
 test/*.bin
