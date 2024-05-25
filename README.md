@@ -29,12 +29,13 @@ each matrix multiplication. The current format is `float8_e5m2`, but other varia
 ## Speed
 
 Currently calculate the float8 rather than LUT, can be vectorized. The implementation is scalar, but should be
-vectorizable, which should provide 4x speedup.
+vectorizable, which may provide 4x speedup.
 
 Still, the performance is the same order of magnitude as the FP32 matrix multiplication, faster than FP64,
 on `1/8` A16, FP64 performance is `17.5GFLOPS`, while this implementation is `32.3GFLOPS`, so it might be good
-enough for simulation purposes. After fully vectorized, the performance should be around `129.2GFLOPS`, and
-it should be scalable on older devices(since shared memory usage is minimal).
+enough for simulation purposes. After fully vectorized, the performance should be around `100GFLOPS`, and
+it should be scalable on older devices(since shared memory usage is minimal). It can be further optimized by
+using bigger kernel.
 
 It can enable engineers to develop and test FP8 algorithms on older devices without FP8 support, like laptops and
 personal computers, and then deploy them on newer devices with FP8 support.
