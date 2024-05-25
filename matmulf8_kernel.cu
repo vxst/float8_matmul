@@ -122,19 +122,13 @@ __device__ __host__ __forceinline__ uint8_t float8_e5m2_mlt(uint8_t a, uint8_t b
     // This LUT can fit in RF
     // WARNING: Rounding is different, to be more efficient
     // Only different when abs(x_f8_1 - x) == abs(x_f8_2 - x)
-    uint8_t m2_lut[16] = {
-        0b0100, 0b0101, 0b0110, 0b0111,
-        0b0101, 0b0110, 0b0111, 0b1001,
-        0b0110, 0b0111, 0b1001, 0b1010,
-        0b0111, 0b1001, 0b1010, 0b1100
-    };
     if(a == 0 || b == 0) return 0;
-    uint8_t a_m2 = a & 0b11;
-    uint8_t b_m2 = b & 0b11;
+    uint8_t a_m2 = a & 0b11 | 0b100;
+    uint8_t b_m2 = b & 0b11 | 0b100;
     int8_t a_e5 = (a >> 2) & 0b11111;
     int8_t b_e5 = (b >> 2) & 0b11111;
 
-    uint8_t m2 = m2_lut[(a_m2 << 2) | b_m2];
+    uint8_t m2 = (a_m2 * b_m2) >> 2;
     int8_t e5 = a_e5 + b_e5 - 15;
     if(m2 & 0b1000){
         e5++; m2 >>= 1;

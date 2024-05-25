@@ -29,7 +29,7 @@ each matrix multiplication. The current format is `float8_e5m2`, but other varia
 ## Speed
 
 Currently calculate the float8 rather than LUT, can be vectorized. The implementation is scalar, but should be
-vectorizable, which may provide 4x speedup.
+vectorizable, which may provide 4x speedup, since all bit manipulation and multiplication can be vectorized.[1]
 
 Still, the performance is the same order of magnitude as the FP32 matrix multiplication, faster than FP64,
 on `1/8` A16, FP64 performance is `17.5GFLOPS`, while this implementation is `32.3GFLOPS`, so it might be good
@@ -58,3 +58,5 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with float8_matmul. If not, see <http://www.gnu.org/licenses/>.
 ```
+
+1. https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__INTRINSIC__INT.html
