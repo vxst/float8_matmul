@@ -146,7 +146,8 @@ __device__ __host__ __forceinline__ uint8_t float8_e5m2_mlt(uint8_t a, uint8_t b
 // error: identifier "__dp4a" is undefined
 // And
 // calling a __device__ function("__dp4a(int, int, int)") from a __host__ __device__ function is not allowed
-// Perhaps it's a bug of my nvcc, so I have to use the scalar version
+// Perhaps it's a bug of my nvcc or my usage(?), currently I have to use the scalar version
+// 
 // __device__ __forceinline__ int float8_e5m2_vmlt(int a, int b) {
 //     int a_m = a & 0x03030303, b_m = b & 0x03030303;
 //     int a_e = (a & 0x7C7C7C7C) >> 2, b_e = (b & 0x7C7C7C7C) >> 2;
@@ -187,8 +188,7 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c) {
 #endif
     // int mlt = float8_e5m2_vmlt(a, b);
     int mlt = 0;
-    // TODO: Use unpack PTX instruction
-// #pragma unroll
+#pragma unroll
     for(int i = 0; i < 4; i++) {
         int a0 = (a >> (i * 8)) & 0xff;
         int b0 = (b >> (i * 8)) & 0xff;

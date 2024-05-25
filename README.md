@@ -29,17 +29,20 @@ each matrix multiplication. The current format is `float8_e5m2`, but other varia
 ## Speed
 
 Currently calculate the float8 rather than LUT, can be vectorized. The implementation is scalar, but should be
-vectorizable, which may provide 4x speedup, since all bit manipulation and multiplication can be vectorized.[1]
+vectorizable, which may provide 4x speedup, since all bit manipulation and multiplication can be vectorized.
 
 Still, the performance is the same order of magnitude as the FP32 matrix multiplication, faster than FP64,
 on `1/8` A16, FP64 performance is `17.5GFLOPS`, while this implementation is `32.3GFLOPS`, so it might be good
 enough for simulation purposes. After fully vectorized, the performance should be around `100GFLOPS` for `1/8` `A16`(4:1),
 and it should be scalable on older devices(since shared memory usage is minimal). It can be further optimized by
-using bigger kernel. The target is 4:1 to 2:1 performance ratio between FP32 and FP8, should be good enough for
-simulation purposes.
+using bigger kernel. The target is 4:1 to 2:1 performance ratio between FP32 and FP8, but even current performance
+at 15:1, which should be more than `1TFLOPS` on `A100`, should be good enough for simulation/research purposes.
 
-It can enable engineers to develop and test FP8 algorithms on older devices without FP8 support, like laptops and
-personal computers, and then deploy them on newer devices with FP8 support.
+Vectorization is not online as NVIDIA documents[1] something but doesn't compile. There is PTX instruction though,
+perhaps my usage is somehow wrong(?). Will look into it later.
+
+It can enable engineers to develop and research on FP8 algorithms on older devices without FP8 support, but with
+CUDA support, should be more accessible for general developer than Hoppper.
 
 # WARNING: THIS IS AN EXPERIMENTAL PROJECT, NOT FULLY TESTED YET
 
