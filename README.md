@@ -28,15 +28,13 @@ each matrix multiplication. The current format is `float8_e5m2`, but other varia
 
 ## Speed
 
-Since I have no hardware to know whether LUT is faster than calc in real hardware(95% throllte when run with 1/8
-of A16, normally shared memory throllte should be below 60% even for extensive use), I have implemented add with
-calc and kept mlt with LUT. The add implementation is very naive and without any vectorization, normally it can
-be 4x faster with vectorization. Since my hardware throllte on any intensive shared memory access, I'd rather
-keep it simple and optimize it later.
+Currently calculate the float8 rather than LUT, can be vectorized. The implementation is scalar, but should be
+vectorizable, which should provide 4x speedup.
 
-Still, the performance is the same order of magnitude as the FP32 matrix multiplication, much faster than FP64,
-on `1/8` A16, FP64 performance is `17.5GFLOPS`, while this implementation is `124.6GFLOPS`, so it might be good
-enough for simulation purposes.
+Still, the performance is the same order of magnitude as the FP32 matrix multiplication, faster than FP64,
+on `1/8` A16, FP64 performance is `17.5GFLOPS`, while this implementation is `32.3GFLOPS`, so it might be good
+enough for simulation purposes. After fully vectorized, the performance should be around `129.2GFLOPS`, and
+it should be scalable on older devices(since shared memory usage is minimal).
 
 It can enable engineers to develop and test FP8 algorithms on older devices without FP8 support, like laptops and
 personal computers, and then deploy them on newer devices with FP8 support.

@@ -5,7 +5,7 @@
 
 
 int main() {
-    int n = 1024, m = 1024, p = 1024;
+    int n = 2048, m = 2048, p = 2048;
     int *A, *B, *C;
     cudaSetDevice(0);
     cudaFree(0);
@@ -15,13 +15,13 @@ int main() {
     cudaMallocHost(&C, n * p * sizeof(int) / 4);
     for(int i = 0; i < n * m / 4; i++) {
         A[i] = rand();
-        // A[i] &= 0x7f7f7f7f;
-        A[i] = 0;
+        A[i] &= 0x7f7f7f7f;
+        // A[i] = 0;
     }
     for(int i = 0; i < m * p / 4; i++) {
         B[i] = rand();
-        // B[i] &= 0x7f7f7f7f;
-        B[i] = 0;
+        B[i] &= 0x7f7f7f7f;
+        // B[i] = 0;
     }
     float t = matmul(A, B, C, n, m, p);
     printf("Time: %f ms\n", t);
