@@ -139,6 +139,45 @@ __device__ __host__ __forceinline__ uint8_t float8_e5m2_mlt(uint8_t a, uint8_t b
 
     return ((a&0x80)^(b&0x80)) | (e5 << 2) | m2;
 }
+// Below is the vectorized version of float8_e5m2_mlt
+// Nvidia Doc:
+// To use these functions you do not need to include any additional header files in your program.
+// However, nvcc with error:
+// error: identifier "__dp4a" is undefined
+// And
+// calling a __device__ function("__dp4a(int, int, int)") from a __host__ __device__ function is not allowed
+// Perhaps it's a bug of my nvcc, so I have to use the scalar version
+// __device__ __forceinline__ int float8_e5m2_vmlt(int a, int b) {
+//     int a_m = a & 0x03030303, b_m = b & 0x03030303;
+//     int a_e = (a & 0x7C7C7C7C) >> 2, b_e = (b & 0x7C7C7C7C) >> 2;
+//     int e = a_e + b_e - 0x0F0F0F0F;
+//     int m = __dp4a(a_m, b_m, 0);
+//     int md = m >> 1;
+//     int m_msk = (m & 0x08080808) >> 3;
+//     e += m_msk;
+//     int res = e | ((a & 0x80808080) ^ (b & 0x80808080));
+//     if(m_msk & 0x00000001){
+//         res |= md & 0x00000003;
+//     }else{
+//         res |= m & 0x00000003;
+//     }
+//     if(m_msk & 0x00000100){
+//         res |= md & 0x00000300;
+//     }else{
+//         res |= m & 0x00000300;
+//     }
+//     if(m_msk & 0x00010000){
+//         res |= md & 0x00030000;
+//     }else{
+//         res |= m & 0x00030000;
+//     }
+//     if(m_msk & 0x01000000){
+//         res |= md & 0x03000000;
+//     }else{
+//         res |= m & 0x03000000;
+//     }
+//     return res;
+// }
 
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
 #ifdef TEST
@@ -146,16 +185,15 @@ __device__ __host__ int fma8v4(int a, int b, int c) {
 #else
 __device__ __forceinline__ int fma8v4(int a, int b, int c) {
 #endif
+    // int mlt = float8_e5m2_vmlt(a, b);
     int mlt = 0;
     // TODO: Use unpack PTX instruction
-#pragma unroll
+// #pragma unroll
     for(int i = 0; i < 4; i++) {
         int a0 = (a >> (i * 8)) & 0xff;
         int b0 = (b >> (i * 8)) & 0xff;
         mlt |= float8_e5m2_mlt(a0, b0) << (i * 8);
     }
-    // One example of vectorized code
-    // mlt |= (a&0x80808080) ^ (b&0x80808080);
     return addv4(c, mlt);
 }
 
