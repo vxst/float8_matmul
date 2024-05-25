@@ -3,7 +3,7 @@ NVCC = nvcc
 CFLAGS = -O3 -arch=native -Xptxas --warn-on-spills --generate-line-info
 
 MAIN_CU = main.cu
-KERNEL_CU = load_core.cu matmulf8.cu matmulf8_kernel.cu
+KERNEL_CU = matmulf8.cu matmulf8_kernel.cu
 OUTPUT_BENCH = bench
 
 run: $(OUTPUT_BENCH)

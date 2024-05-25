@@ -96,10 +96,6 @@ __host__ __device__ __forceinline__ uint8_t float8_e5m2_add(uint8_t a, uint8_t b
     return result;
 }
 
-__device__ __host__ __forceinline__ int access_byte(const int* __restrict__ data, int i) {
-    return data[i>>2] >> ((i&3)<<3) & 0xff;
-}
-
 __device__ __host__ __forceinline__ int add(int a, int b){
     return float8_e5m2_add(a, b);
 }
@@ -122,11 +118,39 @@ __device__ __forceinline__ int addv4(int a, int b) {
     return res;
 }
 
+__device__ __host__ __forceinline__ uint8_t float8_e5m2_mlt(uint8_t a, uint8_t b) {
+    // This LUT can fit in RF
+    // WARNING: Rounding is different, to be more efficient
+    // Only different when abs(x_f8_1 - x) == abs(x_f8_2 - x)
+    uint8_t m2_lut[16] = {
+        0b0100, 0b0101, 0b0110, 0b0111,
+        0b0101, 0b0110, 0b0111, 0b1001,
+        0b0110, 0b0111, 0b1001, 0b1010,
+        0b0111, 0b1001, 0b1010, 0b1100
+    };
+    if(a == 0 || b == 0) return 0;
+    uint8_t a_m2 = a & 0b11;
+    uint8_t b_m2 = b & 0b11;
+    int8_t a_e5 = (a >> 2) & 0b11111;
+    int8_t b_e5 = (b >> 2) & 0b11111;
+
+    uint8_t m2 = m2_lut[(a_m2 << 2) | b_m2];
+    int8_t e5 = a_e5 + b_e5 - 15;
+    if(m2 & 0b1000){
+        e5++; m2 >>= 1;
+    }
+    if(e5 < 0)
+        return 0;
+    m2 &= 0b0011;
+
+    return ((a&0x80)^(b&0x80)) | (e5 << 2) | m2;
+}
+
 // Do a 4 8bit fma, r[i] = a[i] * b[i] + c[i]
 #ifdef TEST
-__device__ __host__ int fma8v4(int a, int b, int c, int* __restrict__ mcore) {
+__device__ __host__ int fma8v4(int a, int b, int c) {
 #else
-__device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ mcore) {
+__device__ __forceinline__ int fma8v4(int a, int b, int c) {
 #endif
     int mlt = 0;
     // TODO: Use unpack PTX instruction
@@ -134,35 +158,28 @@ __device__ __forceinline__ int fma8v4(int a, int b, int c, int* __restrict__ mco
     for(int i = 0; i < 4; i++) {
         int a0 = (a >> (i * 8)) & 0xff;
         int b0 = (b >> (i * 8)) & 0xff;
-        mlt |= access_byte(mcore, ((a0&0xff)<<7) + (b0&0xff)) << (i * 8);
+        mlt |= float8_e5m2_mlt(a0, b0) << (i * 8);
     }
-    mlt |= (a&0x80808080) ^ (b&0x80808080);
+    // One example of vectorized code
+    // mlt |= (a&0x80808080) ^ (b&0x80808080);
     return addv4(c, mlt);
 }
 
 // A 32x8 core, do 32x32 matrix multiplication
 // tx: 0-31, ty: 0-7
 __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restrict__ C,
-                         int n, int m, int p,
-                         int* __restrict__ mcore) {
+                         int n, int m, int p){
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     int x0 = blockIdx.x * blockDim.x, y0 = blockIdx.y * blockDim.y;
     const int u = threadIdx.x % 8, v = threadIdx.y * 4 + threadIdx.x / 8; // u: 0-7, v: 0-31, u is continuous
     const int tx = threadIdx.x, ty = threadIdx.y;
-    int tid = threadIdx.y * blockDim.x + threadIdx.x;
     int mz = m / 4, pz = p / 4;
 
     int res = 0;
     int dres;
     int rs[4];
-    __shared__ int mc[4096];
     __shared__ int As[32 * 9], Bs[32 * 9];
-    // Load core
-    for(int i = 0; i < 4096; i += 256) {
-        mc[i + tid] = __ldca(mcore + i + tid);
-    }
-    __syncthreads();
 
     for(int i = 0; i < mz; i += 8) {
         As[v * 9 + u] = A[(x0 + v) * mz + i + u];
@@ -172,7 +189,7 @@ __global__ void matmulf8(int* __restrict__ A, int* __restrict__ B, int* __restri
         rs[0] = rs[1] = rs[2] = rs[3] = 0;
         for(int j = 0; j < 8; j++) {
             for(int k = 0; k < 4; k++){
-                rs[k] = fma8v4(As[tx*9+j], Bs[(ty*4+k)*9+j], rs[k], mc);
+                rs[k] = fma8v4(As[tx*9+j], Bs[(ty*4+k)*9+j], rs[k]);
             }
         }
         dres = 0;

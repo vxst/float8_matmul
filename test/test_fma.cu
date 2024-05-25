@@ -21,7 +21,7 @@ int main(){
 
     for(int i = 0; i < 10; i++){
         // printf("%x * %x + %x = %x\n", a[i], b[i], c[i], d[i]);
-        int d_fma = fma8v4(a[i], b[i], c[i], mcore);
+        int d_fma = fma8v4(a[i], b[i], c[i]);
         // printf("GPU: %x\n", d_fma);
         if(!subeq(d_fma, d[i])){
             printf("%x * %x + %x expect %x, got %x\n", a[i], b[i], c[i], d[i], d_fma);
