@@ -33,9 +33,10 @@ vectorizable, which may provide 4x speedup, since all bit manipulation and multi
 
 Still, the performance is the same order of magnitude as the FP32 matrix multiplication, faster than FP64,
 on `1/8` A16, FP64 performance is `17.5GFLOPS`, while this implementation is `32.3GFLOPS`, so it might be good
-enough for simulation purposes. After fully vectorized, the performance should be around `100GFLOPS`, and
-it should be scalable on older devices(since shared memory usage is minimal). It can be further optimized by
-using bigger kernel.
+enough for simulation purposes. After fully vectorized, the performance should be around `100GFLOPS` for `1/8` `A16`(4:1),
+and it should be scalable on older devices(since shared memory usage is minimal). It can be further optimized by
+using bigger kernel. The target is 4:1 to 2:1 performance ratio between FP32 and FP8, should be good enough for
+simulation purposes.
 
 It can enable engineers to develop and test FP8 algorithms on older devices without FP8 support, like laptops and
 personal computers, and then deploy them on newer devices with FP8 support.
